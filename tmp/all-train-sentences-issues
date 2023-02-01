@@ -1,0 +1,111 @@
+SCRIPT: huggingface_test_phrase.py
+DATE: 2023-01-11
+INPUT_FILE: YES (./text-input/all-train-sentences)
+
+# ISSUES FACED
+1) Blank spaces in text files causes IndexError
+
+[ERROR]
+---------------------------------------------------------------------------
+IndexError                                Traceback (most recent call last)
+File ~/hugging-test/huggingface_test_phrase.py:98
+     95         test_index += 1
+     97 if __name__ == "__main__":
+---> 98     main()
+
+File ~/hugging-test/huggingface_test_phrase.py:61, in main()
+     55 # # [OLD]: Using round may cause IndexError | IF is included to prevent such error
+     56 # rand_pos = int(round(len(tokens) * random.random(), 0)) 
+     57 # if rand_pos == len(tokens):
+     58 #    floorerror += 1
+     60 tokens_copy = tokens.copy()
+---> 61 tokens_copy[rand_pos] = "[MASK]"
+     62 masked_sentence = " ".join(tokens_copy)
+     64 # Words filtered to lowercase as models accept lowercase only
+
+IndexError: list assignment index out of range
+---------------------------------------------------------------------------
+
+[FIX]: Added blank sentence detection
+
+[CODE]:
+        if sentence == "":
+            blank_line += 1
+            print (f"""
+        TEST [{test_index}]
+            
+            !!! BLACK SPACE ALERT !!!
+            
+            Cumulative no. of blank sentences = {blank_line}
+        """)
+            continue
+
+[OUTPUT]:
+        TEST [28]
+            
+            !!! BLACK SPACE ALERT !!!
+            
+            Cumulative no. of blank sentences = 1
+ 
+
+2) Test Index skips when blank sentences are triggered
+
+[FIX]: Shifted the position of test_index += 1 from last to first of the loop
+
+3) Selection of characters apart from alphabets
+
+[SAMPLE_OUTPUT]:
+TEST [178]
+            Word: "
+            Index: 0
+            word_filter: True
+            Sentence: [MASK] in the subject line.
+            
+            Score [albert-base-v2]: 0
+            Score [jobs-642498]: 0
+            
+            Score Difference: 0
+            albert_base_dominant: False
+            
+[FIXED_OUTPUT]:
+        TEST [18]
+            Word: 00101101
+            Index: 8
+            word_filter: True
+            Sentence: Familiarity "77" with materials, "77" building systems and [MASK] construction methods
+            
+            Score [albert-base-v2]: 0
+            Score [jobs-642498]: 0
+            
+            Score Difference: 0
+            albert_base_dominant: False
+        
+
+            ==========
+            [ALERT]: Randomly selected word is not an alphabet.
+            word_raw: 00101101
+            non_alpha = 1
+            ==========
+
+[ISSUE]: not_alpha_detect includes words that have both alphabets and characters [FIXED]
+
+[FIX]: function not_alpha_detect(raw_word) detects if there are only characters apart from alphabets 
+            
+
+4) Selection of single words will lead to zero score
+
+[SAMPLE_OUTPUT]:
+
+TEST [548]
+    Word: special!
+    Index: 0
+    word_filter: True
+    Sentence: [MASK]
+            
+    Score [albert-base-v2]: 0
+    Score [jobs-642498]: 0
+            
+    Score Difference: 0
+    albert_base_dominant: False
+    
+[TO BE FIXED]
